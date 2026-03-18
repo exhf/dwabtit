@@ -30,14 +30,17 @@
   <div class="step"><b>Step 2</b> — After approving, you'll be redirected back here automatically</div>
   <div class="step"><b>Step 3</b> — Copy the token and paste it into OBS overlay</div>
 
-  <button class="btn" onclick="doLogin()">🔐 Login with Spotify</button>
+  <button class="btn" id="login-btn">🔐 Login with Spotify</button>
+  <div id="manual-link" style="display:none;margin-top:8px;text-align:center;">
+    <a id="manual-href" style="color:#1ed360;font-size:12px;">Click here if button doesn't work</a>
+  </div>
 
   <div class="error" id="error-msg"></div>
 
   <div class="token-box" id="token-box">
     <h2>✅ Your Access Token</h2>
     <div class="token-text" id="token-display"></div>
-    <button class="copy-btn" onclick="copyToken()">📋 Copy Token</button>
+    <button class="copy-btn" id="copy-btn">📋 Copy Token</button>
     <p class="success" id="copy-confirm" style="display:none">Copied! Now paste it in OBS ✅</p>
     <p style="color:#64748b;font-size:12px;margin-top:12px;">⚠️ Token expires in 1 hour. If Spotify stops working in OBS, come back here and get a new one.</p>
 
@@ -51,7 +54,7 @@
 
 <script>
   const CLIENT_ID    = 'bcb9efdceb9a4de197fc65cbdb8dee4b';
-  const REDIRECT_URI = 'file:///C:/Users/riman/OneDrive/spotify-login.html';
+  const REDIRECT_URI = 'https://exhf.github.io/dwabtit/spotify-login.html';
   const SCOPES = 'user-read-playback-state user-modify-playback-state user-read-currently-playing playlist-modify-public playlist-modify-private';
 
   /* ── PKCE helpers ── */
@@ -81,12 +84,20 @@
     const params = new URLSearchParams({
       client_id:             CLIENT_ID,
       response_type:         'code',
-      redirect_uri:          file:///C:/Users/riman/OneDrive/spotify-login.html,
+      redirect_uri:          REDIRECT_URI,
       scope:                 SCOPES,
       code_challenge_method: 'S256',
       code_challenge:        challenge,
     });
-    window.location = 'https://accounts.spotify.com/authorize?' + params.toString();
+    const url = 'https://accounts.spotify.com/authorize?' + params.toString();
+
+    // Show manual link fallback in case redirect doesn't fire
+    const linkEl = document.getElementById('manual-href');
+    const linkDiv = document.getElementById('manual-link');
+    if (linkEl) { linkEl.href = url; linkEl.textContent = '👉 Click here to open Spotify login'; }
+    if (linkDiv) linkDiv.style.display = 'block';
+
+    window.location = url;
   }
 
   /* ── Handle redirect back with ?code= ── */
@@ -128,7 +139,8 @@
 
       if (data.access_token) {
         localStorage.setItem('sp_access_token', data.access_token);
-        // Clean URL
+        if (data.refresh_token) localStorage.setItem('sp_refresh_token', data.refresh_token);
+        localStorage.setItem('sp_token_expiry', Date.now() + (data.expires_in * 1000));
         window.history.replaceState({}, document.title, window.location.pathname);
         showToken(data.access_token);
       } else {
@@ -144,6 +156,8 @@
   function showToken(token) {
     document.getElementById('token-display').textContent = token;
     document.getElementById('token-box').style.display = 'block';
+    // Write to localStorage so OBS overlay auto-picks it up
+    localStorage.setItem('sp_access_token', token);
     window.scrollTo(0,999);
   }
 
@@ -153,6 +167,26 @@
       document.getElementById('copy-confirm').style.display = 'block';
       setTimeout(() => document.getElementById('copy-confirm').style.display='none', 3000);
     });
+  }
+
+  /* ── Wire up buttons with addEventListener (onclick unreliable in some browsers) ── */
+  function wireButtons() {
+    const loginBtn = document.getElementById('login-btn');
+    if (loginBtn) {
+      loginBtn.addEventListener('click', doLogin);
+      loginBtn.addEventListener('mousedown', doLogin);
+      loginBtn.addEventListener('pointerdown', doLogin);
+    }
+    const copyBtn = document.getElementById('copy-btn');
+    if (copyBtn) {
+      copyBtn.addEventListener('click', copyToken);
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', wireButtons);
+  } else {
+    wireButtons();
   }
 
   /* Check if we already have a stored token */
