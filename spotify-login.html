@@ -51,7 +51,7 @@
 
 <script>
   const CLIENT_ID    = 'bcb9efdceb9a4de197fc65cbdb8dee4b';
-  const REDIRECT_URI = 'https://exhf.github.io/dwabtit/spotify-login.html';
+  const REDIRECT_URI = 'file:///C:/Users/riman/OneDrive/spotify-login.html';
   const SCOPES = 'user-read-playback-state user-modify-playback-state user-read-currently-playing playlist-modify-public playlist-modify-private';
 
   /* ── PKCE helpers ── */
@@ -81,7 +81,7 @@
     const params = new URLSearchParams({
       client_id:             CLIENT_ID,
       response_type:         'code',
-      redirect_uri:          REDIRECT_URI,
+      redirect_uri:          file:///C:/Users/riman/OneDrive/spotify-login.html,
       scope:                 SCOPES,
       code_challenge_method: 'S256',
       code_challenge:        challenge,
